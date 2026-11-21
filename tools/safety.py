@@ -90,6 +90,27 @@ NOTIFICATION_LOCAL = {
 AUTOMATED_LOCAL = NOTIFICATION_LOCAL - {"support", "hello"}
 
 
+# Concrete German document and security signals, shared by protection and
+# classification. Do not match generic "Versicherung", "Vertrag", "Sicherheit"
+# or "auf Rechnung": those also occur in ordinary advertising.
+GERMAN_TRANSACTIONAL = re.compile(
+    r"(?:\b(?:ihre?|deine?)\s+(?:(?:aktuell|neu)(?:e|en|er|es|em)\s+)?"
+    r"(?:rechnung(?:en)?|gutschrift(?:en)?|kassenbon|zahlungsbeleg)\b|"
+    r"^(?:rechnung(?:en)?|gutschrift(?:en)?|mahnung|zahlungserinnerung)\b|"
+    r"\b(?:kabel|mobilfunk|telekom|strom|gas|jahres|monats)[ -]?rechnung\b|"
+    r"\b(?:vertragsbest(?:ä|ae)tigung|k(?:ü|ue)ndigungsbest(?:ä|ae)tigung|"
+    r"versicherungsschein|beitragsrechnung|kassenbon|ebon|"
+    r"zahlungsbest(?:ä|ae)tigung|buchungsbest(?:ä|ae)tigung|"
+    r"reservierungsbest(?:ä|ae)tigung|terminbest(?:ä|ae)tigung|"
+    r"arbeitsvertrag|gehaltsabrechnung|lohnabrechnung|steuerbescheid|"
+    r"unterhaltsvorschuss|sicherheitswarnung|best(?:ä|ae)tigungscode)\b|"
+    r"\bbest(?:ä|ae)tigung\s+(?:ihrer|deiner)\s+k(?:ü|ue)ndigung\b|"
+    r"\bungew(?:ö|oe)hnliche\s+anmeldung\b|"
+    r"\bpasswort\s+zur(?:ü|ue)cksetzen\b)",
+    re.IGNORECASE,
+)
+
+
 @dataclass
 class Verdict:
     protected: bool = False
@@ -102,7 +123,7 @@ def protect_verdict(headers: ParsedHeaders, protect_domains: list[str] | None = 
     if reason:
         return Verdict(True, reason)
     subject = clean_subject(headers.subject)
-    match = PROTECTED_SUBJECT.search(subject)
+    match = PROTECTED_SUBJECT.search(subject) or GERMAN_TRANSACTIONAL.search(subject)
     if match:
         return Verdict(True, f"subject looks transactional ({match.group(0).lower()!r})")
     return Verdict(False, None)
@@ -209,7 +230,7 @@ def classify(headers: ParsedHeaders, mailbox: str = "INBOX", policy=None) -> Cla
     newsletter_hits = NEWSLETTER.findall(subject)
     if newsletter_hits:
         add("newsletter", 30, f"newsletter wording ({newsletter_hits[0]})")
-    transactional_hits = TRANSACTIONAL.findall(subject)
+    transactional_hits = TRANSACTIONAL.findall(subject) or GERMAN_TRANSACTIONAL.findall(subject)
     if transactional_hits:
         add("transactional", 55, f"transactional subject ({transactional_hits[0]})")
     if verdict.protected:
