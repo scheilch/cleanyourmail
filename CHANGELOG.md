@@ -4,6 +4,17 @@ All notable changes to CleanYourMail are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+
+- Recognize concrete German billing, contract, security, employment and booking
+  subjects as protected mail. The same vocabulary is used for transactional
+  classification. Generic advertising such as "Kaufen auf Rechnung" or "Rabatt
+  auf deine Versicherung" does not gain document protection from those phrases.
+- Add synthetic German regression cases, including campaign headers and plan
+  generation: protected messages must not produce move or unsubscribe actions.
+
 ## [1.3.0] - 2026-11-11
 
 ### Added
